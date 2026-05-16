@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Meraki" />
+    <title>Meraki</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='32' fill='%2303542d'/%3E%3Cpath d='M32 86 C32 50, 48 40, 64 64 C80 40, 96 50, 96 86' stroke='white' stroke-width='12' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='64' cy='36' r='8' fill='white'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- ══ SPLASH SCREEN ══ -->
+    <div id="splash-screen" class="splash-screen">
+      <div class="brand splash-brand">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 128 128"
+          class="logo-svg splash-logo"
+        >
+          <rect width="128" height="128" rx="32" fill="var(--accent)" />
+          <path
+            d="M32 86 C32 50, 48 40, 64 64 C80 40, 96 50, 96 86"
+            stroke="white"
+            stroke-width="12"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="logo-path"
+          />
+          <circle cx="64" cy="36" r="8" fill="white" class="logo-dot" />
+        </svg>
+        <div class="wordmark splash-wordmark">MERAK<em>I</em></div>
+      </div>
+    </div>
+
+    <div class="app">
+      <header class="header">
+        <div class="brand">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 128 128"
+            class="logo-svg"
+          >
+            <rect width="128" height="128" rx="32" fill="var(--accent)" />
+            <path
+              d="M32 86 C32 50, 48 40, 64 64 C80 40, 96 50, 96 86"
+              stroke="white"
+              stroke-width="12"
+              fill="none"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="logo-path"
+            />
+            <circle cx="64" cy="36" r="8" fill="white" class="logo-dot" />
+          </svg>
+          <div class="wordmark">MERAK<em>I</em></div>
+        </div>
+        <div class="today-badge" id="today-badge"></div>
+      </header>
+
+      <nav class="nav">
+        <button class="nav-tab active" onclick="switchPage('tasks', this)">
+          Tasks
+        </button>
+        <button class="nav-tab" onclick="switchPage('calendar', this)">
+          Calendar
+        </button>
+        <button class="nav-tab" onclick="switchPage('settings', this)">
+          Settings
+        </button>
+      </nav>
+
+      <!-- ══ TASKS PAGE ══ -->
+      <div class="page active" id="page-tasks">
+        <div class="day-progress" id="day-progress" style="display: none">
+          <div class="day-progress-label">
+            <span class="day-progress-title">Today's Progress</span>
+            <span class="day-progress-pct" id="day-pct-label">0%</span>
+          </div>
+          <div class="day-progress-track">
+            <div
+              class="day-progress-fill"
+              id="day-pct-bar"
+              style="width: 0%"
+            ></div>
+          </div>
+        </div>
+
+        <div class="task-input-wrapper">
+          <input
+            type="text"
+            id="new-task-input"
+            placeholder="What needs to be done?"
+            maxlength="120"
+            onkeydown="if (event.key === 'Enter') addTask();"
+          />
+          <button class="add-task-btn" onclick="addTask()">+</button>
+        </div>
+
+        <div id="tasks-container"></div>
+      </div>
+
+      <!-- ══ CALENDAR PAGE ══ -->
+      <div class="page" id="page-calendar">
+        <div class="cal-top">
+          <div class="view-toggle">
+            <button class="vt-btn active" id="vt-28" onclick="setCalView('28')">
+              28 Days
+            </button>
+            <button class="vt-btn" id="vt-full" onclick="setCalView('full')">
+              Calendar
+            </button>
+          </div>
+        </div>
+
+        <div class="stats-strip" id="stats-strip"></div>
+
+        <div id="heatmap-view"></div>
+        <div id="full-cal-view" style="display: none"></div>
+      </div>
+
+      <!-- ══ SETTINGS PAGE ══ -->
+      <div class="page" id="page-settings">
+        <div class="settings-group">
+          <h3 class="settings-title">Appearance</h3>
+          <div class="setting-item">
+            <div class="setting-label">
+              <span class="setting-name">Dark Mode</span>
+              <span class="setting-desc">Switch to a darker theme</span>
+            </div>
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                id="toggle-dark-mode"
+                onchange="toggleDarkMode(this.checked)"
+              />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3 class="settings-title">Preferences</h3>
+          <div class="setting-item">
+            <div class="setting-label">
+              <span class="setting-name">Hide Completed</span>
+              <span class="setting-desc"
+                >Remove finished tasks from the list</span
+              >
+            </div>
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                id="toggle-hide-completed"
+                onchange="toggleHideCompleted(this.checked)"
+              />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-item" style="flex-wrap: wrap; gap: 12px">
+            <div class="setting-label" style="flex: 1; min-width: 200px">
+              <span class="setting-name">Daily Reminder</span>
+              <span class="setting-desc"
+                >Get notified to complete your tasks</span
+              >
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px">
+              <input
+                type="time"
+                id="notification-time"
+                class="time-input"
+                onchange="setNotificationTime(this.value)"
+              />
+              <label class="toggle-switch">
+                <input
+                  type="checkbox"
+                  id="toggle-notifications"
+                  onchange="toggleNotifications(this.checked)"
+                />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+          <div
+            class="setting-item"
+            style="flex-direction: column; align-items: flex-start; gap: 12px"
+          >
+            <div class="setting-label">
+              <span class="setting-name">Accent Color</span>
+              <span class="setting-desc">Choose your primary theme color</span>
+            </div>
+            <div class="color-picker" id="color-picker"></div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3 class="settings-title">Data Management</h3>
+          <div class="setting-item">
+            <div class="setting-label">
+              <span class="setting-name">Clear All Data</span>
+              <span class="setting-desc"
+                >Permanently delete tasks and history</span
+              >
+            </div>
+            <button class="btn-danger" onclick="clearData()">Clear Data</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ UNDO TOAST ══ -->
+    <div id="undo-toast" class="undo-toast">
+      <span>Task deleted</span>
+      <button class="undo-btn" onclick="undoDelete()">Undo</button>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
