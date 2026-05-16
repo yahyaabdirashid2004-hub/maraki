@@ -82,11 +82,8 @@ body {
   gap: 16px;
 }
 .splash-logo {
-  width: 80px;
-  height: 80px;
-}
-.splash-wordmark {
-  font-size: 24px;
+  width: 500px;
+  height: 500px;
 }
 .splash-hidden {
   opacity: 0;
@@ -145,15 +142,12 @@ body {
     transform: translateY(0);
   }
 }
-.wordmark {
+.header-reminder-time {
+  font-family: "DM Mono", monospace;
   font-size: 16px;
-  font-weight: 800;
-  letter-spacing: 0.4em;
-  text-transform: uppercase;
-}
-.wordmark em {
-  color: var(--accent);
-  font-style: normal;
+  color: var(--text-dim);
+  font-weight: 600;
+  letter-spacing: 0.05em;
 }
 .today-badge {
   font-family: "DM Mono", monospace;
@@ -691,12 +685,12 @@ body {
   gap: 4px;
 }
 .setting-name {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text);
 }
 .setting-desc {
-  font-size: 11px;
+  font-size: 14px;
   color: var(--text-dim);
 }
 
@@ -796,6 +790,34 @@ body {
 .time-input:focus {
   border-color: var(--accent);
 }
+.add-reminder-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 4px;
+}
+.reminder-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.remove-reminder-btn {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+  border: none;
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: bold;
+}
 
 /* ── UNDO TOAST ── */
 .undo-toast {
@@ -826,4 +848,80 @@ body {
   font-size: 16px;
   font-weight: bold;
   cursor: pointer;
+}
+
+/* ── DAY MODAL ── */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-content {
+  background: var(--surface);
+  border-radius: var(--radius);
+  width: 90%;
+  max-width: 400px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.modal-header h3 {
+  font-size: 18px;
+  color: var(--text);
+  font-weight: 700;
+}
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: var(--text-dim);
+  cursor: pointer;
+  line-height: 1;
+}
+.modal-tasks-list {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.modal-task-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface2);
+  border-radius: 8px;
+  font-size: 16px;
+}
+.modal-task-item.done {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+.modal-chk {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-task-item.done .modal-chk {
+  background: var(--accent);
+  border-color: var(--accent);
 }

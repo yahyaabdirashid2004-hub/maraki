@@ -17,6 +17,7 @@ const MONTH_NAMES = [
   "DECEMBER",
 ];
 const ACCENT_COLORS = ["#03542d"];
+const DEFAULT_TASKS = ["Reading", "Gym", "Salah", "Meditation", "Studying"];
 const NOTIFICATION_QUOTES = [
   "The secret of getting ahead is getting started. – Mark Twain",
   "Don't watch the clock; do what it does. Keep going. – Sam Levenson",
@@ -48,6 +49,7 @@ let state = {
   log: {},
   settings: { darkMode: false, hideCompleted: false, accentColor: "#03542d" },
   lastNotified: "",
+  currentDate: "",
 };
 let calView = "28";
 let calMonthOffset = 0;
@@ -69,6 +71,7 @@ function loadState() {
       notificationTime: "09:00",
     };
     state.lastNotified = s.lastNotified || "";
+    state.currentDate = s.currentDate || "";
   } catch (e) {}
 }
 function saveState() {
@@ -79,6 +82,7 @@ function saveState() {
       log: state.log,
       settings: state.settings,
       lastNotified: state.lastNotified,
+      currentDate: state.currentDate,
     }),
   );
 }
@@ -155,12 +159,37 @@ function updateAppIcon(color) {
 // ══════════════════════════════════════════
 // LOG
 // ══════════════════════════════════════════
+function checkNewDay() {
+  const ts = todayStr();
+  if (state.currentDate !== ts) {
+    if (!state.currentDate) {
+      if (state.tasks.length === 0) {
+        state.tasks = DEFAULT_TASKS.map((t) => ({
+          id: uid(),
+          text: t,
+          done: false,
+        }));
+      }
+    } else {
+      // It's a new day! Keep the task list, but uncheck everything.
+      state.tasks.forEach((t) => (t.done = false));
+    }
+    state.currentDate = ts;
+    updateLog(); // Initialize today's log right away
+  }
+}
+
 function updateLog() {
   const ts = todayStr();
   let total = state.tasks.length;
   let done = state.tasks.filter((t) => t.done).length;
   if (total > 0)
-    state.log[ts] = { completed: done, total, ratio: done / total };
+    state.log[ts] = {
+      completed: done,
+      total,
+      ratio: done / total,
+      tasks: JSON.parse(JSON.stringify(state.tasks)), // Save a snapshot of actual tasks
+    };
   else delete state.log[ts];
   saveState();
 }
@@ -223,6 +252,8 @@ function switchPage(id, el) {
 // TASKS RENDER
 // ══════════════════════════════════════════
 function renderTasks() {
+  checkNewDay();
+
   const container = document.getElementById("tasks-container");
   const prog = document.getElementById("day-progress");
   const pctLabel = document.getElementById("day-pct-label");
@@ -415,7 +446,7 @@ function render28() {
         : `${fmt(s)}: no data`;
       return `<div class="heat-cell${s === ts ? " today-cell" : ""}"
                  style="background:${heatColor(r)}"
-                 data-tip="${tip}"></div>`;
+                 data-tip="${tip}" onclick="openDayModal('${s}')"></div>`;
     })
     .join("");
 
@@ -468,9 +499,11 @@ function renderFullCal() {
         : !future
           ? `${d} ${MONTH_NAMES[month].slice(0, 3)}: no data`
           : "";
+    const pastOrToday = date <= today();
     cells += `<div class="full-day${s === ts ? " today-day" : ""}${future ? " future-day" : ""}"
                    style="background:${future ? "#f3f4f6" : heatColor(r)}"
-                   ${tip ? `data-tip="${tip}"` : ""}>${d}</div>`;
+                   ${tip ? `data-tip="${tip}"` : ""}
+                   ${pastOrToday ? `onclick="openDayModal('${s}')"` : ""}>${d}</div>`;
   }
 
   container.innerHTML = `
@@ -485,6 +518,38 @@ function renderFullCal() {
 function calNav(dir) {
   calMonthOffset += dir;
   renderFullCal();
+}
+
+// ══════════════════════════════════════════
+// MODALS
+// ══════════════════════════════════════════
+function openDayModal(dateString) {
+  const logEntry = state.log[dateString];
+  const modal = document.getElementById("day-modal");
+  const title = document.getElementById("modal-date-title");
+  const list = document.getElementById("modal-tasks-list");
+
+  title.textContent = fmt(dateString);
+
+  if (!logEntry || !logEntry.tasks) {
+    list.innerHTML = `<p style="color: var(--text-dim); text-align: center; padding: 20px;">No tasks recorded for this day.</p>`;
+  } else {
+    list.innerHTML = logEntry.tasks
+      .map(
+        (t) => `
+      <div class="modal-task-item ${t.done ? "done" : ""}">
+        <div class="modal-chk">${t.done ? '<span style="color:#fff; font-size:12px; font-weight:bold;">✓</span>' : ""}</div>
+        <span>${esc(t.text)}</span>
+      </div>`,
+      )
+      .join("");
+  }
+  modal.style.display = "flex";
+}
+
+function closeDayModal(e) {
+  if (e && e.target.id !== "day-modal") return; // Keep modal open if you click inside it
+  document.getElementById("day-modal").style.display = "none";
 }
 
 // ══════════════════════════════════════════
@@ -598,7 +663,7 @@ function setupNotificationChecker() {
           notif.close();
         };
       }
-      state.lastNotified = currentDay;
+      state.lastNotified = currentDay + "-" + currentTime;
       saveState();
     }
   }, 60000); // Check every minute
@@ -622,6 +687,34 @@ function clearData() {
 // ══════════════════════════════════════════
 function init() {
   loadState();
+
+  // --- TEMPORARY BACKFILL ---
+  const backfillStart = new Date(new Date().getFullYear(), 4, 13); // Month 4 is May (0-indexed)
+  const backfillEnd = today();
+  let logChanged = false;
+  for (
+    let d = new Date(backfillStart);
+    d <= backfillEnd;
+    d.setDate(d.getDate() + 1)
+  ) {
+    const ds = dateStr(d);
+    const defaultTasksObj = DEFAULT_TASKS.map((t) => ({ text: t, done: true }));
+    if (!state.log[ds]) {
+      state.log[ds] = {
+        completed: 5,
+        total: 5,
+        ratio: 1,
+        tasks: defaultTasksObj,
+      };
+      logChanged = true;
+    } else if (!state.log[ds].tasks) {
+      // Give tasks to the days we previously backfilled
+      state.log[ds].tasks = defaultTasksObj;
+      logChanged = true;
+    }
+  }
+  if (logChanged) saveState();
+  // --------------------------
 
   const d = new Date();
   document.getElementById("today-badge").textContent = d
@@ -723,32 +816,6 @@ function init() {
     swipedTask = null;
     isSwiping = false;
   });
-
-  // Temporary Test Notification Button
-  const testNotifBtn = document.createElement("button");
-  testNotifBtn.textContent = "Test Notification";
-  testNotifBtn.style.cssText =
-    "position: fixed; bottom: 80px; right: 24px; z-index: 9999; padding: 12px 16px; background: var(--accent); color: white; border: none; border-radius: var(--radius); font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; font-family: 'Palatino', serif;";
-  testNotifBtn.onclick = () => {
-    if ("Notification" in window && Notification.permission === "granted") {
-      const randomQuote =
-        NOTIFICATION_QUOTES[
-          Math.floor(Math.random() * NOTIFICATION_QUOTES.length)
-        ];
-      const accent = state.settings.accentColor || "#03542d";
-      const notif = new Notification("Meraki: Tasks pending!", {
-        body: randomQuote,
-        icon: getNotificationIcon(accent),
-      });
-      notif.onclick = () => {
-        window.focus();
-        notif.close();
-      };
-    } else {
-      alert("Please enable notifications in settings first!");
-    }
-  };
-  document.body.appendChild(testNotifBtn);
 }
 
 init();
