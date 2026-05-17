@@ -202,6 +202,21 @@
           <h3 class="settings-title">Data Management</h3>
           <div class="setting-item">
             <div class="setting-label">
+              <span class="setting-name">Backup Data</span>
+              <span class="setting-desc">Save your progress to a file</span>
+            </div>
+            <button class="btn-secondary" onclick="exportData()">Export</button>
+          </div>
+          <div class="setting-item">
+            <div class="setting-label">
+              <span class="setting-name">Restore Data</span>
+              <span class="setting-desc">Load progress from a file</span>
+            </div>
+            <input type="file" id="import-file" style="display:none" onchange="importData(event)" accept=".json">
+            <button class="btn-secondary" onclick="document.getElementById('import-file').click()">Import</button>
+          </div>
+          <div class="setting-item">
+            <div class="setting-label">
               <span class="setting-name">Clear All Data</span>
               <span class="setting-desc"
                 >Permanently delete tasks and history</span

@@ -316,7 +316,15 @@ function toggleTask(taskId) {
   }
   const task = state.tasks.find((t) => t.id === taskId);
   if (!task) return;
+
+  const wasAllDone = state.tasks.length > 0 && state.tasks.every((t) => t.done);
   task.done = !task.done;
+  const isAllDone = state.tasks.length > 0 && state.tasks.every((t) => t.done);
+
+  if (!wasAllDone && isAllDone) {
+    triggerConfetti();
+  }
+
   updateLog();
   renderTasks();
 }
@@ -555,17 +563,76 @@ function closeDayModal(e) {
 // ══════════════════════════════════════════
 // SETTINGS
 // ══════════════════════════════════════════
+function updateHeaderReminders() {
+  const el = document.getElementById("header-reminder-time");
+  if (!el) return;
+  if (
+    state.settings.notificationsEnabled &&
+    state.settings.notificationTimes &&
+    state.settings.notificationTimes.length > 0
+  ) {
+    const times = [...state.settings.notificationTimes].sort();
+    el.textContent = "🔔 " + times.join(", ");
+  } else {
+    el.textContent = "";
+  }
+}
+
+function renderRemindersList() {
+  updateHeaderReminders();
+  const list = document.getElementById("reminders-list");
+  const addBtn = document.getElementById("add-reminder-btn");
+  if (!list || !addBtn) return;
+
+  if (!state.settings.notificationsEnabled) {
+    list.innerHTML = "";
+    addBtn.style.display = "none";
+    return;
+  }
+
+  addBtn.style.display = "block";
+  list.innerHTML = (state.settings.notificationTimes || [])
+    .map(
+      (time, i) => `
+    <div class="reminder-row">
+      <input type="time" class="time-input" value="${time}" onchange="updateNotificationTime(${i}, this.value)">
+      <button class="remove-reminder-btn" onclick="removeNotificationTime(${i})">×</button>
+    </div>
+  `,
+    )
+    .join("");
+}
+
+function updateNotificationTime(index, time) {
+  state.settings.notificationTimes[index] = time;
+  saveState();
+  renderRemindersList();
+}
+
+function removeNotificationTime(index) {
+  state.settings.notificationTimes.splice(index, 1);
+  saveState();
+  renderRemindersList();
+}
+
+function addNotificationTime() {
+  if (!state.settings.notificationTimes) state.settings.notificationTimes = [];
+  state.settings.notificationTimes.push("12:00");
+  saveState();
+  renderRemindersList();
+}
+
 function applySettingsToDOM() {
   document.body.classList.toggle("dark-mode", state.settings.darkMode);
   const toggleDark = document.getElementById("toggle-dark-mode");
   const toggleHide = document.getElementById("toggle-hide-completed");
   const toggleNotif = document.getElementById("toggle-notifications");
-  const timeInput = document.getElementById("notification-time");
 
   if (toggleDark) toggleDark.checked = state.settings.darkMode;
   if (toggleHide) toggleHide.checked = state.settings.hideCompleted;
   if (toggleNotif) toggleNotif.checked = state.settings.notificationsEnabled;
-  if (timeInput) timeInput.value = state.settings.notificationTime || "09:00";
+
+  renderRemindersList();
 
   const accent = state.settings.accentColor || "#03542d";
   document.documentElement.style.setProperty("--accent", accent);
@@ -643,10 +710,11 @@ function setupNotificationChecker() {
     const currentDay = dateStr(now);
     const currentTime = now.toTimeString().slice(0, 5); // "HH:MM"
 
-    if (
-      currentTime === state.settings.notificationTime &&
-      state.lastNotified !== currentDay
-    ) {
+    const shouldNotify =
+      state.settings.notificationTimes &&
+      state.settings.notificationTimes.includes(currentTime);
+
+    if (shouldNotify && state.lastNotified !== currentDay + "-" + currentTime) {
       const remaining = state.tasks.filter((t) => !t.done).length;
       if (remaining > 0) {
         const randomQuote =
@@ -680,6 +748,73 @@ function clearData() {
   state.log = {};
   saveState();
   alert("All data has been cleared.");
+}
+
+function exportData() {
+  const dataStr = JSON.stringify({
+    tasks: state.tasks,
+    log: state.log,
+    settings: state.settings,
+    lastNotified: state.lastNotified,
+    currentDate: state.currentDate,
+  });
+  const blob = new Blob([dataStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `meraki-backup-${dateStr(new Date())}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (parsed.log && parsed.tasks) {
+        state.tasks = parsed.tasks;
+        state.log = parsed.log;
+        if (parsed.settings) state.settings = parsed.settings;
+        state.lastNotified = parsed.lastNotified || "";
+        state.currentDate = parsed.currentDate || "";
+        saveState();
+        applySettingsToDOM();
+        renderTasks();
+        alert("Data successfully restored!");
+      } else {
+        alert("Invalid backup file format.");
+      }
+    } catch (err) {
+      alert("Error reading file.");
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = "";
+}
+
+function triggerConfetti() {
+  const colors = [
+    "#10b981",
+    "#f59e0b",
+    "#ef4444",
+    "#3b82f6",
+    "#8b5cf6",
+    state.settings.accentColor || "#03542d",
+  ];
+  for (let i = 0; i < 60; i++) {
+    const conf = document.createElement("div");
+    conf.className = "confetti";
+    conf.style.left = Math.random() * 100 + "vw";
+    conf.style.backgroundColor =
+      colors[Math.floor(Math.random() * colors.length)];
+    conf.style.animationDuration = Math.random() * 2 + 2 + "s";
+    conf.style.animationDelay = Math.random() * 0.5 + "s";
+    document.body.appendChild(conf);
+    setTimeout(() => conf.remove(), 4000);
+  }
 }
 
 // ══════════════════════════════════════════

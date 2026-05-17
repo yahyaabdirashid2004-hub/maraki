@@ -81,9 +81,9 @@ body {
   flex-direction: column;
   gap: 16px;
 }
-.splash-logo {
-  width: 500px;
-  height: 500px;
+.splash-screen .splash-logo {
+  width: 140px;
+  height: 140px;
 }
 .splash-hidden {
   opacity: 0;
@@ -674,10 +674,10 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  background: var(--surface);
+  background: transparent;
   border-radius: var(--radius);
   margin-bottom: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  box-shadow: none;
 }
 .setting-label {
   display: flex;
@@ -751,6 +751,23 @@ body {
 .btn-danger:hover {
   background: var(--danger);
   color: white;
+}
+
+/* Secondary Button */
+.btn-secondary {
+  padding: 8px 16px;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: "Palatino", "Palatino Linotype", "Book Antiqua", serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-secondary:hover {
+  background: var(--border2);
 }
 
 /* Color Picker */
@@ -848,6 +865,21 @@ body {
   font-size: 16px;
   font-weight: bold;
   cursor: pointer;
+}
+
+/* ── CONFETTI ── */
+.confetti {
+  position: fixed;
+  top: -10px;
+  width: 10px;
+  height: 10px;
+  z-index: 10000;
+  animation: confettiFall linear forwards;
+}
+@keyframes confettiFall {
+  to {
+    transform: translateY(110vh) rotate(720deg);
+  }
 }
 
 /* ── DAY MODAL ── */
